@@ -28,7 +28,7 @@ if(date == "") return
 
 async function get_matches(){
     var driver = new Builder().forBrowser(Browser.CHROME)
-    // .setChromeOptions( new chrome.Options().headless().windowSize(screen))
+    .setChromeOptions( new chrome.Options().headless().windowSize(screen))
     .build();
 
     try {
@@ -37,7 +37,9 @@ async function get_matches(){
 
         await driver.get(`https://www.cbssports.com/soccer/champions-league/schedule/${date}/`).catch((err)=>{return err;});
 
-        const MATCHES_TABLE = await driver.wait(until.elementLocated(By.css('TableBase-title--large')), 5000).catch((err)=>{return err;});
+        let matches_table_xpath = '//table[@class="TableBase-table"]//tbody//tr';
+
+        const MATCHES_TABLE = await driver.wait(until.elementLocated(By.xpath(matches_table_xpath)), 5000).catch((err)=>{return err;});
     
         if(MATCHES_TABLE instanceof Error){
             console.log("Error Getting matches for this date");
@@ -45,16 +47,18 @@ async function get_matches(){
             return
         }
 
-        let matches_count = await driver.findElements(By.css('TableBase-title--large'), 5000).catch((err)=>{return err;});
+        let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
 
-        if(matches_count instanceof Error){
-            console.log("Error login to : ");
-            return
+        var all_teams = [];
+
+        for (let i = 1; i <= matches_count.length; i++) {
+            await driver.findElement(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000)
+                            .getText()
+                            .then((name) => all_teams.push(name));
         }
 
-        console.log(matches_count);
+        console.log(all_teams)
 
-        console.log("salam");
     } catch (error) {
         console.log(error);
     }
