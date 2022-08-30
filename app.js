@@ -28,6 +28,15 @@ if(date == "") return;
 // //   bot.sendMessage(chatId, 'Received your message');
 // });
 
+function split(str, index) {
+    const result = [str.slice(0, index), str.slice(index)];
+    return result;
+}
+
+const [year, MonthAndDay] = split(date, 4);
+const [month, day] = split(MonthAndDay, 2);
+let game_date = year + "-" + month + "-" + day;
+
 async function get_matches(){
     var driver = new Builder().forBrowser(Browser.CHROME)
     .setChromeOptions( new chrome.Options().headless().windowSize(screen))
@@ -72,16 +81,6 @@ async function get_matches(){
             return resultArray;
         }, []);
 
-        function split(str, index) {
-            const result = [str.slice(0, index), str.slice(index)];
-            return result;
-        }
-
-        const [year, MonthAndDay] = split(date, 4);
-        const [month, day] = split(MonthAndDay, 2);
-
-        let game_date = year + "-" + month + "-" + day;
-
         for (const match of matches) {
             try {
                 await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
@@ -98,4 +97,14 @@ async function get_matches(){
  
 }
 
-get_matches();
+async function check_if_matches_already_exist(date){
+    const [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [date]);
+    if(rows.length == 0){
+        get_matches();
+    }
+
+    console.log(rows);
+}
+
+// get_matches();
+check_if_matches_already_exist(game_date);
