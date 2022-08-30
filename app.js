@@ -3,8 +3,10 @@ const { exit } = require('process');
 const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const screen = {width: 1920,height: 1080};
-const axios = require('axios').default;
 require('dotenv').config();
+ 
+const connection = require("./db.congif");
+const promisePool = connection.promise();
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = process.env.TELEGRAM_BOT_API;
@@ -13,7 +15,7 @@ const token = process.env.TELEGRAM_BOT_API;
 const bot = new TelegramBot(token, {polling: true});
 
 var date = process.argv.slice(2)[0];
-if(date == "") return
+if(date == "") return;
 
 // Listen for any kind of message. There are different kinds of
 // messages.
@@ -57,10 +59,41 @@ async function get_matches(){
                             .then((name) => all_teams.push(name));
         }
 
-        console.log(all_teams)
+        // Split teams by 2 and get partidos
+        const perChunk = 2;   
+        const matches = all_teams.reduce((resultArray, item, index) => { 
+            const chunkIndex = Math.floor(index/perChunk);
+
+            // start a new chunk
+            if(!resultArray[chunkIndex]) resultArray[chunkIndex] = [];
+
+            resultArray[chunkIndex].push(item);
+
+            return resultArray;
+        }, []);
+
+        function split(str, index) {
+            const result = [str.slice(0, index), str.slice(index)];
+            return result;
+        }
+
+        const [year, MonthAndDay] = split(date, 4);
+        const [month, day] = split(MonthAndDay, 2);
+
+        let game_date = year + "-" + month + "-" + day;
+
+        for (const match of matches) {
+            try {
+                await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
+            } catch (error) {
+                console.log(error.message);
+            }
+        }
+
+        console.log("done");
 
     } catch (error) {
-        console.log(error);
+        console.log(error.message);
     }
  
 }
