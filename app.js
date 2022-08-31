@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { exit } = require('process');
+// const { exit } = require('process');
 const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const screen = {width: 1920,height: 1080};
@@ -14,35 +14,76 @@ const token = process.env.TELEGRAM_BOT_API;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
 
-var date = process.argv.slice(2)[0];
-if(date == "") return;
+// Today date format yyyy-mm-dd
+var today_date = new Date().toJSON().slice(0,10);
+var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// Listen for any kind of message. There are different kinds of
-// messages.
-// bot.on('message', (msg) => {
-//   const chatId = msg.chat.id;
+// Listen for any kind of message. There are different kinds of messages.
+bot.on('message', async (msg) => {
+    var response = "";
+    const chatId = msg.chat.id;
 
-//   console.log(msg);
+    // if not command message exit
+    if(!msg.entities) return
 
-//   // send a message to the chat acknowledging receipt of their message
-// //   bot.sendMessage(chatId, 'Received your message');
-// });
+    switch (msg.text) {
+        case '/partidos_li_majin':
+
+            // Get date for next Tuesday Or Wednesday if today is not Tuesday or Wednesday
+            var d = new Date();
+            var dayName = days[d.getDay()];
+            if(!["Tuesday", "Wednesday"].includes(dayName)){
+                d.setDate(d.getDate() + (((1 + 8 - d.getDay()) % 7) || 7));
+            }
+            
+            let month = d.getMonth() + 1;
+            let day = d.getDate();
+            if(day < 10) day = "0" + day;
+            if(month < 10) month = "0" + month;
+
+            let date = d.getFullYear() + month + day;
+
+            await check_if_matches_already_exist(date).then((matches) => {
+                if(Array.isArray(matches)){
+                    for (const match of matches) {
+                        response = response.concat("\n",match.game);
+                    }
+                }else{
+                    response = matches;
+                }
+            });
+            break;
+    
+        default:
+            break;
+    }
+
+    // send a message to the chat acknowledging receipt of their message
+    if(response == "") response = "Error please try again";
+    bot.sendMessage(chatId, response);
+});
 
 function split(str, index) {
     const result = [str.slice(0, index), str.slice(index)];
     return result;
 }
 
-const [year, MonthAndDay] = split(date, 4);
-const [month, day] = split(MonthAndDay, 2);
-let game_date = year + "-" + month + "-" + day;
-
-async function get_matches(){
+async function get_matches(date){
     var driver = new Builder().forBrowser(Browser.CHROME)
     .setChromeOptions( new chrome.Options().headless().windowSize(screen))
     .build();
 
     try {
+
+        const [year, MonthAndDay] = split(date, 4);
+        const [month, day] = split(MonthAndDay, 2);
+        let game_date = year + "-" + month + "-" + day;
+
+        var d = new Date(game_date);
+        var dayName = days[d.getDay()];
+
+        // If it's not Tuesday or Wednesday just exit
+        if(!["Tuesday", "Wednesday"].includes(dayName)) return "No upcoming matches";
         
         await driver.manage().setTimeouts( { implicit: 0, pageLoad: 5000, script: null } );
 
@@ -53,12 +94,12 @@ async function get_matches(){
         const MATCHES_TABLE = await driver.wait(until.elementLocated(By.xpath(matches_table_xpath)), 5000).catch((err)=>{return err;});
     
         if(MATCHES_TABLE instanceof Error){
-            console.log("Error Getting matches for this date");
-            // driver.quit();
-            return
+            driver.quit();
+            return "No upcoming matches";
         }
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
+        if(matches_count.length == 0) return "No upcoming matches";
 
         var all_teams = [];
 
@@ -81,15 +122,18 @@ async function get_matches(){
             return resultArray;
         }, []);
 
+        let all_games = [];
+
         for (const match of matches) {
             try {
                 await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
+                all_games.push({"game" : match.join(" VS ")});
             } catch (error) {
-                console.log(error.message);
+                return error.message
             }
         }
 
-        console.log("done");
+        return all_games;
 
     } catch (error) {
         console.log(error.message);
@@ -98,13 +142,15 @@ async function get_matches(){
 }
 
 async function check_if_matches_already_exist(date){
-    const [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [date]);
+    
+    const [year, MonthAndDay] = split(date, 4);
+    const [month, day] = split(MonthAndDay, 2);
+    let game_date = year + "-" + month + "-" + day;
+
+    let [rows,fields] = await promisePool.query("SELECT game FROM matches WHERE entered_at = ?", [game_date]);
     if(rows.length == 0){
-        get_matches();
+        rows = await get_matches(date);
     }
 
-    console.log(rows);
+    return rows;
 }
-
-// get_matches();
-check_if_matches_already_exist(game_date);
