@@ -15,12 +15,11 @@ const token = process.env.TELEGRAM_BOT_API;
 const bot = new TelegramBot(token, {polling: true});
 
 // Today date format yyyy-mm-dd
-var today_date = new Date().toJSON().slice(0,10);
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Listen for any kind of message. There are different kinds of messages.
 bot.on('message', async (msg) => {
-    var response = "";
+    let response = "";
     const chatId = msg.chat.id;
 
     // if not command message exit
@@ -29,19 +28,10 @@ bot.on('message', async (msg) => {
     switch (msg.text) {
         case '/partidos_li_majin':
 
-            // Get date for next Tuesday Or Wednesday if today is not Tuesday or Wednesday
-            var d = new Date();
-            var dayName = days[d.getDay()];
-            if(!["Tuesday", "Wednesday"].includes(dayName)){
-                d.setDate(d.getDate() + (((1 + 8 - d.getDay()) % 7) || 7));
-            }
-            
-            let month = d.getMonth() + 1;
-            let day = d.getDate();
-            if(day < 10) day = "0" + day;
-            if(month < 10) month = "0" + month;
+            const [year, month, day] = getMatchDate();
+            let date = year + month + day;
 
-            let date = d.getFullYear() + month + day;
+            bot.sendMessage(chatId, 'Loading...\nGetting games for ' + year + "-" + month + "-" + day);
 
             await check_if_matches_already_exist(date).then((matches) => {
                 if(Array.isArray(matches)){
@@ -66,6 +56,23 @@ bot.on('message', async (msg) => {
 function split(str, index) {
     const result = [str.slice(0, index), str.slice(index)];
     return result;
+}
+
+function getMatchDate(){
+    // Get date for next Tuesday Or Wednesday if today is not Tuesday or Wednesday
+    var d = new Date();
+    var dayName = days[d.getDay()];
+
+    // If not Today is not Tuesday or Wednesday get the date of the upcoming Tuesday
+    if(!["Tuesday", "Wednesday"].includes(dayName)) d.setDate(d.getDate() + (((1 + 8 - d.getDay()) % 7) || 7));
+    
+    let year = d.getFullYear();
+    let month = d.getMonth() + 1;
+    let day = d.getDate();
+    if(day < 10) day = "0" + day;
+    if(month < 10) month = "0" + month;
+
+    return [year, month, day];
 }
 
 async function get_matches(date){
