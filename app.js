@@ -36,11 +36,29 @@ bot.on('message', async (msg) => {
             case '/start_predections':
 
                 let predection = (msg.text).split("\n");
+
+                if(predection.length > 0){
+                    let player_id = await get_player_id_by_username(msg.from.username);
+                    if(typeof player_id == 'number'){
+                        
+                    }
+                    
+                    await check_if_matches_already_exist(date)
+                        .then((matches) => {
+                            for (let i = 0; i < matches.length; i++) {
+                                try {
+                                    await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points) VALUES (?,?,?,?,?)',
+                                    [matches[i].id, player_id, predection[i], 0, 0]);
+                                } catch (error) {
+                                    return error.message;
+                                }
+                            }
+                    });
+                }
                 
+                // console.log(predection);
 
-                console.log(predection);
-
-                bot.sendMessage(chatId, `Saved, Your tawa9o3at are : \n ${predection} \n Bonne chance`);
+                // bot.sendMessage(chatId, `Saved, Your tawa9o3at are : \n ${predection} \n Bonne chance`);
                 break;
         
             default:
@@ -107,6 +125,14 @@ function getMatchDate(){
     if(month < 10) month = "0" + month;
 
     return [year, month, day];
+}
+
+async function get_player_id_by_username(username){
+    let [player,fields] = await promisePool.query("SELECT id FROM players WHERE username = ?", ["@" + username]);
+    if(player.length == 0){
+        return "No Player with this Username";
+    }
+    return player[0].id;
 }
 
 async function get_matches(date){
@@ -188,7 +214,7 @@ async function check_if_matches_already_exist(date){
     const [month, day] = split(MonthAndDay, 2);
     let game_date = year + "-" + month + "-" + day;
 
-    let [rows,fields] = await promisePool.query("SELECT game FROM matches WHERE entered_at = ?", [game_date]);
+    let [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [game_date]);
     if(rows.length == 0){
         rows = await get_matches(date);
     }
