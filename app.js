@@ -36,10 +36,11 @@ bot.on('message', async (msg) => {
             case '/start_predections':
 
                 let predection = (msg.text).split("\n");
+                
 
-                console.log((msg.text).split("\n"));
+                console.log(predection);
 
-                bot.sendMessage(chatId, "Saved, Bonne chance");
+                bot.sendMessage(chatId, `Saved, Your tawa9o3at are : \n ${predection} \n Bonne chance`);
                 break;
         
             default:
