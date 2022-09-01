@@ -1,5 +1,4 @@
 const TelegramBot = require('node-telegram-bot-api');
-// const { exit } = require('process');
 const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const screen = {width: 1920,height: 1080};
@@ -16,6 +15,9 @@ const bot = new TelegramBot(token, {polling: true});
 
 // Today date format yyyy-mm-dd
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var all_commands = ['/partidos_li_majin', '/start_predections', '/edit_a_predection', '/saborat_tartib'];
+
+var last_command = "";
 
 // Listen for any kind of message. There are different kinds of messages.
 bot.on('message', async (msg) => {
@@ -23,15 +25,36 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
     // if not command message exit
-    if(!msg.entities) return
+    // if(!msg.entities) return
 
+    const [year, month, day] = getMatchDate();
+    let date = year + month + day;
+
+    // all reply to command switch handle
+    if(last_command !== ""){
+        switch (last_command) {
+            case '/start_predections':
+
+                let predection = (msg.text).split("\n");
+
+                console.log((msg.text).split("\n"));
+
+                bot.sendMessage(chatId, "Saved, Bonne chance");
+                break;
+        
+            default:
+                break;
+        }
+    }
+
+    // Save the last command to response to it
+    all_commands.includes(msg.text) ? last_command = msg.text : last_command = "";
+
+    // all commands switch handle
     switch (msg.text) {
         case '/partidos_li_majin':
 
-            const [year, month, day] = getMatchDate();
-            let date = year + month + day;
-
-            bot.sendMessage(chatId, 'Loading...\nGetting games for ' + year + "-" + month + "-" + day);
+            bot.sendMessage(chatId, 'Getting games for ' + year + "-" + month + "-" + day + "...");
 
             await check_if_matches_already_exist(date).then((matches) => {
                 if(Array.isArray(matches)){
@@ -43,14 +66,24 @@ bot.on('message', async (msg) => {
                 }
             });
             break;
-    
+        
+        case '/start_predections':
+
+            bot.sendMessage(chatId, 'Ok, 3amar tawa9o3at dyal ' + year + "-" + month + "-" + day + "\n"
+                            + "Please respect the following format for example: \n"
+                            + "8-2" + "\n" 
+                            + "0-0" + "\n" 
+                            + "nata2ij ghaytsjlo b tartib d partidos\n"
+                            + "bach tchof partidos li kayn please check command "
+                            + "/partidos_li_majin");
+
         default:
             break;
     }
 
     // send a message to the chat acknowledging receipt of their message
-    if(response == "") response = "Error please try again";
-    bot.sendMessage(chatId, response);
+    // if(response == "") response = "Error please try again";
+    // bot.sendMessage(chatId, response);
 });
 
 function split(str, index) {
