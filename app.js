@@ -35,6 +35,10 @@ bot.on('message', async (msg) => {
         switch (last_command) {
             case '/start_predections':
 
+                if((msg.text).startsWith("/")){
+                    break;
+                }
+
                 let predection = (msg.text).split("\n");
 
                 if(predection.length > 0){
@@ -47,12 +51,12 @@ bot.on('message', async (msg) => {
                                     let is_exist = await check_if_player_has_already_fill_the_predections(player_id, match.id);
                                     // If predection already exist
                                     if(is_exist){
-                                        bot.sendMessage(chatId, `Deja 3amarti had Tawa9o3 dyalk for : \n${match.game} \nZiyar m3ana`);
+                                        await bot.sendMessage(chatId, `Deja 3amarti had Tawa9o3 dyalk for : \n${match.game}`);
                                     }else{
                                         await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points, entered_at) VALUES (?,?,?,?,?, NOW())',
                                         [match.id, player_id, predection[i], 0, 0]);
                                         // On success send confirm message
-                                        bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for : \n${match.game} is ${predection[i]}\nBonne chance`);
+                                        await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for : \n${match.game} is ${predection[i]}\nBonne chance`);
                                     }
                                 } catch (error) {
                                     bot.sendMessage(chatId, "Error, Try Again! with command \n /start_predections");
@@ -79,7 +83,7 @@ bot.on('message', async (msg) => {
     switch (msg.text) {
         case '/partidos_li_majin':
 
-            bot.sendMessage(chatId, 'Getting games for ' + year + "-" + month + "-" + day + "...");
+            await bot.sendMessage(chatId, 'Getting games for ' + year + "-" + month + "-" + day + "...");
 
             await check_if_matches_already_exist(date).then((matches) => {
                 if(Array.isArray(matches)){
@@ -90,6 +94,9 @@ bot.on('message', async (msg) => {
                     response = matches;
                 }
             });
+
+            if(response == "") response = "Error please try again";
+            bot.sendMessage(chatId, response);
             break;
         
         case '/start_predections':
@@ -105,10 +112,6 @@ bot.on('message', async (msg) => {
         default:
             break;
     }
-
-    // send a message to the chat acknowledging receipt of their message
-    // if(response == "") response = "Error please try again";
-    // bot.sendMessage(chatId, response);
 });
 
 function split(str, index) {
