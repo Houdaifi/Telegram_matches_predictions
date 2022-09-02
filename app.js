@@ -39,26 +39,32 @@ bot.on('message', async (msg) => {
 
                 if(predection.length > 0){
                     let player_id = await get_player_id_by_username(msg.from.username);
-                    if(typeof player_id == 'number'){
-                        
-                    }
-                    
-                    await check_if_matches_already_exist(date)
-                        .then((matches) => {
-                            for (let i = 0; i < matches.length; i++) {
+                    if(typeof predection[0] == "string"){
+                        await check_if_matches_already_exist(date)
+                        .then(async (matches) => {
+                            for (const [i, match] of matches.entries()) {
                                 try {
-                                    await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points) VALUES (?,?,?,?,?)',
-                                    [matches[i].id, player_id, predection[i], 0, 0]);
+                                    let is_exist = await check_if_player_has_already_fill_the_predections(player_id, match.id);
+                                    // If predection already exist
+                                    if(is_exist){
+                                        bot.sendMessage(chatId, `Deja 3amarti had Tawa9o3 dyalk for : \n${match.game} \nZiyar m3ana`);
+                                    }else{
+                                        await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points, entered_at) VALUES (?,?,?,?,?, NOW())',
+                                        [match.id, player_id, predection[i], 0, 0]);
+                                        // On success send confirm message
+                                        bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for : \n${match.game} is ${predection[i]}\nBonne chance`);
+                                    }
                                 } catch (error) {
+                                    bot.sendMessage(chatId, "Error, Try Again! with command \n /start_predections");
                                     return error.message;
                                 }
                             }
-                    });
+                        });
+                    }else{
+                        bot.sendMessage(chatId, "Error, Try Again! with command \n /start_predections");
+                        return;
+                    }
                 }
-                
-                // console.log(predection);
-
-                // bot.sendMessage(chatId, `Saved, Your tawa9o3at are : \n ${predection} \n Bonne chance`);
                 break;
         
             default:
@@ -210,9 +216,7 @@ async function get_matches(date){
 
 async function check_if_matches_already_exist(date){
     
-    const [year, MonthAndDay] = split(date, 4);
-    const [month, day] = split(MonthAndDay, 2);
-    let game_date = year + "-" + month + "-" + day;
+    let game_date = set_game_date(date);
 
     let [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [game_date]);
     if(rows.length == 0){
@@ -220,4 +224,22 @@ async function check_if_matches_already_exist(date){
     }
 
     return rows;
+}
+
+function set_game_date(date){
+    const [year, MonthAndDay] = split(date, 4);
+    const [month, day] = split(MonthAndDay, 2);
+    let game_date = year + "-" + month + "-" + day;
+
+    return game_date;
+}
+
+async function check_if_player_has_already_fill_the_predections(player_id, match_id){
+    
+    let [rows,fields] = await promisePool.query("SELECT * FROM predections WHERE player_id = ? AND match_id = ?", [player_id, match_id]);
+    if(rows.length == 0){
+        return false;
+    }
+
+    return true;
 }
