@@ -18,6 +18,7 @@ var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 var all_commands = ['/partidos_li_majin', '/start_predections', '/edit_a_predection', '/saborat_tartib'];
 
 var last_command = "";
+var match_id_to_be_edited = 0;
 
 // Listen for any kind of message. There are different kinds of messages.
 bot.on('message', async (msg) => {
@@ -32,17 +33,16 @@ bot.on('message', async (msg) => {
 
     // all reply to command switch handle
     if(last_command !== ""){
+        var player_id = await get_player_id_by_username(msg.from.username);
+
         switch (last_command) {
             case '/start_predections':
 
-                if((msg.text).startsWith("/")){
-                    break;
-                }
+                if((msg.text).startsWith("/")) break;
 
                 let predection = (msg.text).split("\n");
 
                 if(predection.length > 0){
-                    let player_id = await get_player_id_by_username(msg.from.username);
                     if(typeof predection[0] == "string"){
                         await check_if_matches_already_exist(date)
                         .then(async (matches) => {
@@ -54,7 +54,7 @@ bot.on('message', async (msg) => {
                                         await bot.sendMessage(chatId, `Deja 3amarti had Tawa9o3 dyalk for : \n${match.game}`);
                                     }else{
                                         await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points, entered_at) VALUES (?,?,?,?,?, NOW())',
-                                        [match.id, player_id, predection[i], 0, 0]);
+                                        [match.id, player_id, predection[i].trim(), 0, 0]);
                                         // On success send confirm message
                                         await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for : \n${match.game} is ${predection[i]}\nBonne chance`);
                                     }
@@ -70,7 +70,23 @@ bot.on('message', async (msg) => {
                     }
                 }
                 break;
-        
+
+            case '/edit_a_predection':
+                if((msg.text).startsWith("/")) break;
+
+                let new_predection = (msg.text).trim();
+
+                if(new_predection.includes("-")){
+                    await promisePool.execute('UPDATE predections SET result = ? WHERE match_id = ? AND player_id = ?',
+                    [new_predection, match_id_to_be_edited, player_id]);
+
+                    await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for match ID : \n${match_id_to_be_edited} is ${new_predection}\nBonne chance`);
+
+                }else{
+                    bot.sendMessage(chatId, "Error, Try Again! with command \n /edit_a_predection");
+                    return;
+                }
+
             default:
                 break;
         }
@@ -88,7 +104,7 @@ bot.on('message', async (msg) => {
             await check_if_matches_already_exist(date).then((matches) => {
                 if(Array.isArray(matches)){
                     for (const match of matches) {
-                        response = response.concat("\n",match.game);
+                        response = response.concat("\n", match.id + "-" + match.game);
                     }
                 }else{
                     response = matches;
@@ -108,6 +124,40 @@ bot.on('message', async (msg) => {
                             + "nata2ij ghaytsjlo b tartib d partidos\n"
                             + "bach tchof partidos li kayn please check command "
                             + "/partidos_li_majin");
+
+        case '/edit_a_predection':
+
+            let match_ids = []; 
+
+            await check_if_matches_already_exist(date).then((matches) => {
+                if(Array.isArray(matches)){
+                    for (const match of matches) {
+                        response = response.concat("\n", match.id + "-" + match.game);
+                        match_ids.push({text: match.id, callback_data: JSON.stringify({'answer': match.id})});
+                    }
+                }else{
+                    response = matches;
+                }
+            });
+
+            await bot.sendMessage(chatId, "ID - Partido\n" + response);
+
+            await bot.sendMessage(
+                chatId,
+                'Enter the ID of the game you want to change',
+                {
+                    reply_markup: {
+                        inline_keyboard: [match_ids]
+                    }
+                }
+            );
+
+            bot.on('callback_query', async (callbackQuery) => {
+                // const message = callbackQuery.message;
+                match_id_to_be_edited = JSON.parse(callbackQuery.data);
+
+                await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
+            });
 
         default:
             break;
@@ -218,7 +268,6 @@ async function get_matches(date){
 }
 
 async function check_if_matches_already_exist(date){
-    
     let game_date = set_game_date(date);
 
     let [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [game_date]);
