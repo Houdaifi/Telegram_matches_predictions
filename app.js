@@ -15,7 +15,7 @@ const bot = new TelegramBot(token, {polling: true});
 
 // Today date format yyyy-mm-dd
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-var all_commands = ['/partidos_li_majin', '/start_predections', '/edit_a_predection', '/saborat_tartib'];
+var all_commands = ['/partidos_li_majin', '/start_predections', '/edit_a_predection', '/saborat_tartib', '/tawa9o3ati'];
 
 var last_command = "";
 var match_id_to_be_edited = 0;
@@ -25,15 +25,13 @@ bot.on('message', async (msg) => {
     let response = "";
     const chatId = msg.chat.id;
 
-    // if not command message exit
-    // if(!msg.entities) return
-
     const [year, month, day] = getMatchDate();
     let date = year + month + day;
 
+    var player_id = await get_player_id_by_username(msg.from.username);
+
     // all reply to command switch handle
     if(last_command !== ""){
-        var player_id = await get_player_id_by_username(msg.from.username);
 
         switch (last_command) {
             case '/start_predections':
@@ -156,8 +154,19 @@ bot.on('message', async (msg) => {
                     }
                 }
             );
-            
             break;
+
+        case '/tawa9o3ati':
+            
+            await get_player_predection(player_id, date).then((predections) => {
+                response = "";
+                predections.forEach(predection => {
+                    response = response.concat("\n", predection.game + " ==> " + predection.result);
+                });
+            });
+
+            if(response == "") response = "Error, you have no predections for the " + year + "-" + month + "-" + day;
+            bot.sendMessage(chatId, response);
 
         default:
             break;
@@ -296,10 +305,21 @@ function set_game_date(date){
 
 async function check_if_player_has_already_fill_the_predections(player_id, match_id){
     
-    let [rows,fields] = await promisePool.query("SELECT * FROM predections WHERE player_id = ? AND match_id = ?", [player_id, match_id]);
+    let [rows] = await promisePool.query("SELECT * FROM predections WHERE player_id = ? AND match_id = ?", [player_id, match_id]);
     if(rows.length == 0){
         return false;
     }
 
     return true;
+}
+
+async function get_player_predection(player_id, date){
+    let game_date = set_game_date(date);
+
+    let [rows] = await promisePool.query("SELECT m.game, p.result FROM matches m INNER JOIN predections p ON p.match_id = m.id WHERE player_id = ? AND m.entered_at = ?", [player_id, game_date]);
+    if(rows.length == 0){
+        return false;
+    }
+
+    return rows;
 }
