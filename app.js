@@ -104,7 +104,7 @@ bot.on('message', async (msg) => {
             await check_if_matches_already_exist(date).then((matches) => {
                 if(Array.isArray(matches)){
                     for (const match of matches) {
-                        response = response.concat("\n", match.id + "-" + match.game);
+                        response = response.concat("\n", match.game);
                     }
                 }else{
                     response = matches;
@@ -124,6 +124,7 @@ bot.on('message', async (msg) => {
                             + "nata2ij ghaytsjlo b tartib d partidos\n"
                             + "bach tchof partidos li kayn please check command "
                             + "/partidos_li_majin");
+            break;
 
         case '/edit_a_predection':
 
@@ -158,6 +159,8 @@ bot.on('message', async (msg) => {
 
                 await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
             });
+            
+            break;
 
         default:
             break;
