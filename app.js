@@ -72,15 +72,19 @@ bot.on('message', async (msg) => {
                 break;
 
             case '/edit_a_predection':
+
                 if((msg.text).startsWith("/")) break;
 
                 let new_predection = (msg.text).trim();
+
+                console.log(new_predection, match_id_to_be_edited, player_id);
+
 
                 if(new_predection.includes("-")){
                     await promisePool.execute('UPDATE predections SET result = ? WHERE match_id = ? AND player_id = ?',
                     [new_predection, match_id_to_be_edited, player_id]);
 
-                    await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for match ID : \n${match_id_to_be_edited} is ${new_predection}\nBonne chance`);
+                    await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for match ID : ${match_id_to_be_edited}\n is ${new_predection}\nBonne chance`);
 
                 }else{
                     bot.sendMessage(chatId, "Error, Try Again! with command \n /edit_a_predection");
@@ -152,19 +156,20 @@ bot.on('message', async (msg) => {
                     }
                 }
             );
-
-            bot.on('callback_query', async (callbackQuery) => {
-                // const message = callbackQuery.message;
-                match_id_to_be_edited = JSON.parse(callbackQuery.data);
-
-                await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
-            });
             
             break;
 
         default:
             break;
     }
+});
+
+bot.on('callback_query', async (callbackQuery) => {
+    let {message, data} = callbackQuery;
+    let chatId = message.chat.id;
+
+    match_id_to_be_edited = (JSON.parse(data)).answer;
+    await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
 });
 
 function split(str, index) {
