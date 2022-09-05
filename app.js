@@ -40,6 +40,9 @@ bot.on('message', async (msg) => {
 
                 let predection = (msg.text).split("\n");
 
+                console.log(msg.text);
+                return
+
                 if(predection.length > 0){
                     if(typeof predection[0] == "string"){
                         await check_if_matches_already_exist(date)
@@ -119,13 +122,16 @@ bot.on('message', async (msg) => {
         
         case '/start_predections':
 
-            bot.sendMessage(chatId, 'Ok, 3amar tawa9o3at dyal ' + year + "-" + month + "-" + day + "\n"
+            await bot.sendMessage(chatId, 'Ok, 3amar tawa9o3at dyal ' + year + "-" + month + "-" + day + "\n"
                             + "Please respect the following format for example: \n"
                             + "8-2" + "\n" 
                             + "0-0" + "\n" 
                             + "nata2ij ghaytsjlo b tartib d partidos\n"
                             + "bach tchof partidos li kayn please check command "
                             + "/partidos_li_majin");
+
+            await bot.sendMessage(chatId, '<b>Ay natija machi 3la chakel "8-2" matalan, ghatsjel "0-0"</b> \nChokran 3la tafahomikom', {parse_mode: 'HTML'});
+
             break;
 
         case '/edit_a_predection':
@@ -159,14 +165,30 @@ bot.on('message', async (msg) => {
         case '/tawa9o3ati':
             
             await get_player_predection(player_id, date).then((predections) => {
-                response = "";
-                predections.forEach(predection => {
+                if(predections){
+                    response = "";
+                    predections.forEach(predection => {
                     response = response.concat("\n", predection.game + " ==> " + predection.result);
-                });
+                    });
+                }
             });
 
             if(response == "") response = "Error, you have no predections for the " + year + "-" + month + "-" + day;
             bot.sendMessage(chatId, response);
+
+            break;
+
+        case '/saborat_tartib':
+
+            await get_dashboard().then((results) => {
+                response = "";
+                results.forEach(result => {
+                    response = response.concat("\n", (result.lname).toUpperCase() + " ==> " + result.points + " points");
+                });
+            });
+
+            await bot.sendMessage(chatId, response);
+            break;
 
         default:
             break;
@@ -206,6 +228,7 @@ function getMatchDate(){
 async function get_player_id_by_username(username){
     let [player,fields] = await promisePool.query("SELECT id FROM players WHERE username = ?", ["@" + username]);
     if(player.length == 0){
+        driver.quit();
         return "No Player with this Username";
     }
     return player[0].id;
@@ -226,7 +249,10 @@ async function get_matches(date){
         var dayName = days[d.getDay()];
 
         // If it's not Tuesday or Wednesday just exit
-        if(!["Tuesday", "Wednesday"].includes(dayName)) return "No upcoming matches";
+        if(!["Tuesday", "Wednesday"].includes(dayName)){
+            driver.quit();
+            return "No upcoming matches";
+        }
         
         await driver.manage().setTimeouts( { implicit: 0, pageLoad: 5000, script: null } );
 
@@ -242,7 +268,10 @@ async function get_matches(date){
         }
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
-        if(matches_count.length == 0) return "No upcoming matches";
+        if(matches_count.length == 0){
+            driver.quit();
+            return "No upcoming matches";
+        } 
 
         var all_teams = [];
 
@@ -276,9 +305,12 @@ async function get_matches(date){
             }
         }
 
+        driver.quit();
+
         return all_games;
 
     } catch (error) {
+        driver.quit();
         console.log(error.message);
     }
  
@@ -287,7 +319,7 @@ async function get_matches(date){
 async function check_if_matches_already_exist(date){
     let game_date = set_game_date(date);
 
-    let [rows,fields] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [game_date]);
+    let [rows] = await promisePool.query("SELECT * FROM matches WHERE entered_at = ?", [game_date]);
     if(rows.length == 0){
         rows = await get_matches(date);
     }
@@ -322,4 +354,13 @@ async function get_player_predection(player_id, date){
     }
 
     return rows;
+}
+
+async function get_dashboard(){
+    let [results] = await promisePool.query("SELECT lname, points FROM players ORDER BY points DESC");
+    if(results.length == 0){
+        return false;
+    }
+
+    return results;
 }
