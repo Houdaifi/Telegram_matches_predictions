@@ -257,7 +257,7 @@ async function get_matches(date){
             all_games.push(match);
         }
         
-        for (const match of matches) {
+        for (const match of all_games) {
             try {
                 await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
                 all_games.push({"game" : match.join(" VS ")});
