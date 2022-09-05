@@ -238,8 +238,8 @@ async function get_matches(date){
     try {
 
         var driver = new Builder().forBrowser(Browser.CHROME)
-        .setChromeOptions( new chrome.Options().headless().windowSize(screen))
-        .build();
+                    .setChromeOptions( new chrome.Options().headless().windowSize(screen))
+                    .build();
 
         const [year, MonthAndDay] = split(date, 4);
         const [month, day] = split(MonthAndDay, 2);
@@ -249,7 +249,10 @@ async function get_matches(date){
         var dayName = days[d.getDay()];
 
         // If it's not Tuesday or Wednesday just exit
-        if(!["Tuesday", "Wednesday"].includes(dayName)) return "No upcoming matches";
+        if(!["Tuesday", "Wednesday"].includes(dayName)){
+            driver.quit();
+            return "No upcoming matches";
+        }
         
         await driver.manage().setTimeouts( { implicit: 0, pageLoad: 5000, script: null } );
 
@@ -261,13 +264,17 @@ async function get_matches(date){
     
         if(MATCHES_TABLE instanceof Error){
             driver.quit();
-            return "No upcoming matches";
+            return "No upcoming matches, Try again";
         }
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
-        if(matches_count.length == 0) return "No upcoming matches";
+        if(matches_count.length == 0){
+            driver.quit();
+            return "No upcoming matches, Try again";
+        }
         
         var all_games = [];
+        var matches = [];
 
         for (let i = 1; i <= matches_count.length; i++) {
             let rowElements = await driver.findElements(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000);
@@ -280,18 +287,22 @@ async function get_matches(date){
             all_games.push(match);
         }
         
-        for (const match of all_games) {
+        for (const game of all_games) {
             try {
-                await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
-                all_games.push({"game" : match.join(" VS ")});
+                await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [game.join(" VS "), game_date ,"0-0"]);
+                matches.push({"game" : game.join(" VS ")});
             } catch (error) {
+                driver.quit();
                 return error.message
             }
         }
 
-        return all_games;
+        driver.quit();
+
+        return matches;
 
     } catch (error) {
+        driver.quit();
         console.log(error.message);
     }
  
