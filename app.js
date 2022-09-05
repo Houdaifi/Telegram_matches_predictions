@@ -212,11 +212,11 @@ async function get_player_id_by_username(username){
 }
 
 async function get_matches(date){
-    var driver = new Builder().forBrowser(Browser.CHROME)
-    .setChromeOptions( new chrome.Options().headless().windowSize(screen))
-    .build();
-
     try {
+
+        var driver = new Builder().forBrowser(Browser.CHROME)
+        .setChromeOptions( new chrome.Options().headless().windowSize(screen))
+        .build();
 
         const [year, MonthAndDay] = split(date, 4);
         const [month, day] = split(MonthAndDay, 2);
@@ -243,31 +243,21 @@ async function get_matches(date){
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
         if(matches_count.length == 0) return "No upcoming matches";
-
-        var all_teams = [];
+        
+        var all_games = [];
 
         for (let i = 1; i <= matches_count.length; i++) {
-            await driver.findElement(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000)
-                            .getText()
-                            .then((name) => all_teams.push(name));
+            let rowElements = await driver.findElements(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000);
+            let match = [];
+            for (let i = 0; i < rowElements.length; i++) {
+                let clubname = await rowElements[i].getText()
+                match.push(clubname)
+            }
+
+            all_games.push(match);
         }
-
-        // Split teams by 2 and get partidos
-        const perChunk = 2;   
-        const matches = all_teams.reduce((resultArray, item, index) => { 
-            const chunkIndex = Math.floor(index/perChunk);
-
-            // start a new chunk
-            if(!resultArray[chunkIndex]) resultArray[chunkIndex] = [];
-
-            resultArray[chunkIndex].push(item);
-
-            return resultArray;
-        }, []);
-
-        let all_games = [];
-
-        for (const match of matches) {
+        
+        for (const match of all_games) {
             try {
                 await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
                 all_games.push({"game" : match.join(" VS ")});
