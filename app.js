@@ -226,7 +226,7 @@ function getMatchDate(){
 }
 
 async function get_player_id_by_username(username){
-    let [player,fields] = await promisePool.query("SELECT id FROM players WHERE username = ?", ["@" + username]);
+    let [player] = await promisePool.query("SELECT id FROM players WHERE username = ?", ["@" + username]);
     if(player.length == 0){
         driver.quit();
         return "No Player with this Username";
@@ -235,11 +235,11 @@ async function get_player_id_by_username(username){
 }
 
 async function get_matches(date){
+    try {
+
         var driver = new Builder().forBrowser(Browser.CHROME)
         .setChromeOptions( new chrome.Options().headless().windowSize(screen))
         .build();
-
-    try {
 
         const [year, MonthAndDay] = split(date, 4);
         const [month, day] = split(MonthAndDay, 2);
@@ -249,10 +249,7 @@ async function get_matches(date){
         var dayName = days[d.getDay()];
 
         // If it's not Tuesday or Wednesday just exit
-        if(!["Tuesday", "Wednesday"].includes(dayName)){
-            driver.quit();
-            return "No upcoming matches";
-        }
+        if(!["Tuesday", "Wednesday"].includes(dayName)) return "No upcoming matches";
         
         await driver.manage().setTimeouts( { implicit: 0, pageLoad: 5000, script: null } );
 
@@ -268,35 +265,22 @@ async function get_matches(date){
         }
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
-        if(matches_count.length == 0){
-            driver.quit();
-            return "No upcoming matches";
-        } 
-
-        var all_teams = [];
+        if(matches_count.length == 0) return "No upcoming matches";
+        
+        var all_games = [];
 
         for (let i = 1; i <= matches_count.length; i++) {
-            await driver.findElement(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000)
-                            .getText()
-                            .then((name) => all_teams.push(name));
+            let rowElements = await driver.findElements(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000);
+            let match = [];
+            for (let i = 0; i < rowElements.length; i++) {
+                let clubname = await rowElements[i].getText()
+                match.push(clubname)
             }
 
-        // Split teams by 2 and get partidos
-        const perChunk = 2;   
-        const matches = all_teams.reduce((resultArray, item, index) => { 
-            const chunkIndex = Math.floor(index/perChunk);
+            all_games.push(match);
+        }
         
-            // start a new chunk
-            if(!resultArray[chunkIndex]) resultArray[chunkIndex] = [];
-
-            resultArray[chunkIndex].push(item);
-
-            return resultArray;
-        }, []);
-
-        let all_games = [];
-
-        for (const match of matches) {
+        for (const match of all_games) {
             try {
                 await promisePool.execute('INSERT INTO matches (game, entered_at, result) VALUES (?,?,?)', [match.join(" VS "), game_date ,"0-0"]);
                 all_games.push({"game" : match.join(" VS ")});
@@ -305,12 +289,9 @@ async function get_matches(date){
             }
         }
 
-        driver.quit();
-
         return all_games;
 
     } catch (error) {
-        driver.quit();
         console.log(error.message);
     }
  
