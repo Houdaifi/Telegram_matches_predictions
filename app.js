@@ -15,7 +15,8 @@ const bot = new TelegramBot(token, {polling: true});
 
 // Today date format yyyy-mm-dd
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-var all_commands = ['/partidos_li_majin', '/start_predections', '/edit_a_predection', '/saborat_tartib', '/tawa9o3ati'];
+var all_commands = ['/partidos_li_majin', '/partidos_li_majin@Tawa9o3at_bot' ,'/start_predections', '/start_predections@Tawa9o3at_bot', 
+                    '/edit_a_predection', '/edit_a_predection@Tawa9o3at_bot','/saborat_tartib', '/saborat_tartib@Tawa9o3at_bot','/tawa9o3ati', '/tawa9o3ati@Tawa9o3at_bot'];
 
 var last_command = "";
 var match_id_to_be_edited = 0;
@@ -35,6 +36,7 @@ bot.on('message', async (msg) => {
 
         switch (last_command) {
             case '/start_predections':
+            case '/start_predections@Tawa9o3at_bot':
 
                 if((msg.text).startsWith("/")) break;
 
@@ -75,6 +77,7 @@ bot.on('message', async (msg) => {
                 break;
 
             case '/edit_a_predection':
+            case '/edit_a_predection@Tawa9o3at_bot':
 
                 if((msg.text).startsWith("/")) break;
 
@@ -107,6 +110,7 @@ bot.on('message', async (msg) => {
     // all commands switch handle
     switch (msg.text) {
         case '/partidos_li_majin':
+        case '/partidos_li_majin@Tawa9o3at_bot':
 
             await bot.sendMessage(chatId, 'Getting games for ' + year + "-" + month + "-" + day + "...");
 
@@ -125,6 +129,7 @@ bot.on('message', async (msg) => {
             break;
         
         case '/start_predections':
+        case '/start_predections@Tawa9o3at_bot':
 
             await bot.sendMessage(chatId, 'Ok, 3amar tawa9o3at dyal ' + year + "-" + month + "-" + day + "\n"
                             + "Please respect the following format for example: \n"
@@ -139,6 +144,7 @@ bot.on('message', async (msg) => {
             break;
 
         case '/edit_a_predection':
+        case '/edit_a_predection@Tawa9o3at_bot':
 
             let match_ids = []; 
 
@@ -167,6 +173,7 @@ bot.on('message', async (msg) => {
             break;
 
         case '/tawa9o3ati':
+        case '/tawa9o3ati@Tawa9o3at_bot':
             
             await get_player_predection(player_id, date).then((predections) => {
                 if(predections){
@@ -183,6 +190,7 @@ bot.on('message', async (msg) => {
             break;
 
         case '/saborat_tartib':
+        case '/saborat_tartib@Tawa9o3at_bot':
 
             await get_dashboard().then((results) => {
                 response = "";
