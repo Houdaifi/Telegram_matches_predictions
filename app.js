@@ -80,14 +80,16 @@ bot.on('message', async (msg) => {
 
                 let new_predection = (msg.text).trim();
 
-                console.log(new_predection, match_id_to_be_edited, player_id);
-
-
                 if(new_predection.includes("-")){
+                    // if predection in bad format make it = 0-0
+                    if(!(/^\d*-\d*/.test(new_predection))){
+                        new_predection = "0-0";
+                    }
+
                     await promisePool.execute('UPDATE predections SET result = ? WHERE match_id = ? AND player_id = ?',
                     [new_predection, match_id_to_be_edited, player_id]);
 
-                    await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for match ID : ${match_id_to_be_edited}\n is ${new_predection}\nBonne chance`);
+                    await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for match ID : ${match_id_to_be_edited}\nis ${new_predection}\nBonne chance`);
 
                 }else{
                     bot.sendMessage(chatId, "Error, Try Again! with command \n /edit_a_predection");
