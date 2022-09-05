@@ -40,9 +40,6 @@ bot.on('message', async (msg) => {
 
                 let predection = (msg.text).split("\n");
 
-                console.log(msg.text);
-                return
-
                 if(predection.length > 0){
                     if(typeof predection[0] == "string"){
                         await check_if_matches_already_exist(date)
@@ -54,6 +51,11 @@ bot.on('message', async (msg) => {
                                     if(is_exist){
                                         await bot.sendMessage(chatId, `Deja 3amarti had Tawa9o3 dyalk for : \n${match.game}`);
                                     }else{
+                                        // if predection in bad format make it = 0-0
+                                        if(!(/^\d*-\d*/.test(predection[i]))){
+                                            predection[i] = "0-0";
+                                        }
+
                                         await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points, entered_at) VALUES (?,?,?,?,?, NOW())',
                                         [match.id, player_id, predection[i].trim(), 0, 0]);
                                         // On success send confirm message
