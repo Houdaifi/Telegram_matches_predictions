@@ -235,9 +235,9 @@ async function get_player_id_by_username(username){
 }
 
 async function get_matches(date){
-    var driver = new Builder().forBrowser(Browser.CHROME)
-    .setChromeOptions( new chrome.Options().headless().windowSize(screen))
-    .build();
+        var driver = new Builder().forBrowser(Browser.CHROME)
+        .setChromeOptions( new chrome.Options().headless().windowSize(screen))
+        .build();
 
     try {
 
@@ -279,13 +279,13 @@ async function get_matches(date){
             await driver.findElement(By.xpath(`//table[@class="TableBase-table"]//tbody/tr[${i}]//div[@class="TeamLogoNameLockup-name"]//span[@class="TeamName"]`), 5000)
                             .getText()
                             .then((name) => all_teams.push(name));
-        }
+            }
 
         // Split teams by 2 and get partidos
         const perChunk = 2;   
         const matches = all_teams.reduce((resultArray, item, index) => { 
             const chunkIndex = Math.floor(index/perChunk);
-
+        
             // start a new chunk
             if(!resultArray[chunkIndex]) resultArray[chunkIndex] = [];
 
