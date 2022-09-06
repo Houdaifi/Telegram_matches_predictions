@@ -65,7 +65,7 @@ bot.on('message', async (msg) => {
             case '/start_predections':
             case '/start_predections@Tawa9o3at_bot':
 
-                if(!msg.text || (msg.text).startsWith("/")) break;
+                if((msg.text).startsWith("/")) break;
 
                 let predection = (msg.text).split("\n");
 
@@ -240,6 +240,8 @@ bot.on('callback_query', async (callbackQuery) => {
     let chatId = message.chat.id;
 
     match_id_to_be_edited = (JSON.parse(data)).answer;
+
+    last_command = "/edit_a_predection";
     await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
 });
 
@@ -303,13 +305,13 @@ async function get_matches(date){
     
         if(MATCHES_TABLE instanceof Error){
             driver.quit();
-            return "No upcoming matches, Try again";
+            return "No upcoming matches, Try later";
         }
 
         let matches_count = await driver.findElements(By.xpath(matches_table_xpath), 5000);
         if(matches_count.length == 0){
             driver.quit();
-            return "No upcoming matches, Try again";
+            return "No upcoming matches, Try later";
         }
         
         var all_games = [];
