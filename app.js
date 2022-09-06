@@ -16,15 +16,42 @@ const bot = new TelegramBot(token, {polling: true});
 // Today date format yyyy-mm-dd
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 var all_commands = ['/partidos_li_majin', '/partidos_li_majin@Tawa9o3at_bot' ,'/start_predections', '/start_predections@Tawa9o3at_bot', 
-                    '/edit_a_predection', '/edit_a_predection@Tawa9o3at_bot','/saborat_tartib', '/saborat_tartib@Tawa9o3at_bot','/tawa9o3ati', '/tawa9o3ati@Tawa9o3at_bot'];
+                    '/edit_a_predection', '/edit_a_predection@Tawa9o3at_bot','/saborat_tartib', '/saborat_tartib@Tawa9o3at_bot',
+                    '/tawa9o3ati', '/tawa9o3ati@Tawa9o3at_bot'];
 
 var last_command = "";
 var match_id_to_be_edited = 0;
 
+// If it is > 16h on Tuesday or Wednesday return false
+function it_is_over_deadline(){
+    var current_date = new Date();
+    var current_time = current_date.toLocaleTimeString('en-US', { hour12: false });
+
+    var dayName = days[current_date.getDay()];
+
+    const deadline_time = "16:00:00";
+    
+    if(["Tuesday", "Wednesday"].includes(dayName)){
+        if (current_time >= deadline_time){
+            return true
+        }
+    }
+
+    return false;
+}
+
 // Listen for any kind of message. There are different kinds of messages.
 bot.on('message', async (msg) => {
+
     let response = "";
     const chatId = msg.chat.id;
+
+    if(["/start_predections", "/start_predections@Tawa9o3at_bot", "/edit_a_predection", "/edit_a_predection@Tawa9o3at_bot"].includes(msg.text)){
+        if(it_is_over_deadline()){
+            await bot.sendMessage(chatId, 'Fat lwa9t a ba dyali, deadline howa 4 d l3chiya');
+            return;
+        }
+    }
 
     const [year, month, day] = getMatchDate();
     let date = year + month + day;
@@ -38,7 +65,7 @@ bot.on('message', async (msg) => {
             case '/start_predections':
             case '/start_predections@Tawa9o3at_bot':
 
-                if((msg.text).startsWith("/")) break;
+                if(!msg.text || (msg.text).startsWith("/")) break;
 
                 let predection = (msg.text).split("\n");
 
@@ -78,7 +105,7 @@ bot.on('message', async (msg) => {
 
             case '/edit_a_predection':
             case '/edit_a_predection@Tawa9o3at_bot':
-
+                
                 if((msg.text).startsWith("/")) break;
 
                 let new_predection = (msg.text).trim();
@@ -126,6 +153,7 @@ bot.on('message', async (msg) => {
 
             if(response == "") response = "Error please try again";
             bot.sendMessage(chatId, response);
+            
             break;
         
         case '/start_predections':
@@ -240,7 +268,6 @@ function getMatchDate(){
 async function get_player_id_by_username(username){
     let [player] = await promisePool.query("SELECT id FROM players WHERE username = ?", ["@" + username]);
     if(player.length == 0){
-        driver.quit();
         return "No Player with this Username";
     }
     return player[0].id;
