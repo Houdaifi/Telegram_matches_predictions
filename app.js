@@ -17,7 +17,7 @@ const bot = new TelegramBot(token, {polling: true});
 var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 var all_commands = ['/partidos_li_majin', '/partidos_li_majin@Tawa9o3at_bot' ,'/start_predections', '/start_predections@Tawa9o3at_bot', 
                     '/edit_a_predection', '/edit_a_predection@Tawa9o3at_bot','/saborat_tartib', '/saborat_tartib@Tawa9o3at_bot',
-                    '/tawa9o3ati', '/tawa9o3ati@Tawa9o3at_bot'];
+                    '/tawa9o3ati', '/tawa9o3ati@Tawa9o3at_bot', '/nata2ij_dyali', '/nata2ij_dyali@Tawa9o3at_bot'];
 
 var last_command = "";
 var match_id_to_be_edited = 0;
@@ -230,6 +230,19 @@ bot.on('message', async (msg) => {
             await bot.sendMessage(chatId, response);
             break;
 
+        case '/nata2ij_dyali':
+        case '/nata2ij_dyali@Tawa9o3at_bot':
+
+            await get_players_predections_points_with_notes(player_id).then((game_predections) => {
+                response = "";
+                game_predections.forEach(game_predection => {
+                    response = response.concat("\n", (game_predection.game).toUpperCase() + " finished with ==> " + game_predection.result + " And you got " + game_predection.points + " points 7it ==> " + game_predection.note);
+                });
+            });
+                
+            await bot.sendMessage(chatId, response);
+            break;
+
         default:
             break;
     }
@@ -408,6 +421,41 @@ async function get_dashboard(){
     if(results.length == 0){
         return false;
     }
+
+    return results;
+}
+
+function getPastMatchDate(){
+    // Get date for past Tuesday Or Wednesday if today is not Tuesday or Wednesday
+    var d = new Date();
+    var dayName = days[d.getDay()];
+
+    // If not Today is not Tuesday or Wednesday get the date of the past Tuesday
+    if(!["Tuesday", "Wednesday"].includes(dayName)) d.setDate(d.getDate() + (((1 - 6 - d.getDay()) % 7) || 7));
+    
+    let year = d.getFullYear();
+    let month = d.getMonth() + 1;
+    let day = d.getDate();
+    if(day < 10) day = "0" + day;
+    if(month < 10) month = "0" + month;
+
+    return [year, month, day];
+}
+
+async function get_players_predections_points_with_notes(player_id){
+    const [year, month, day] = getPastMatchDate();
+    let first_champions_day = year + month + day;
+    let second_champions_day = year + month + (parseInt(day) + 1);
+
+    let [results] = await promisePool.query(`SELECT m.game, m.result, p.points, p.note FROM matches m
+                                            INNER JOIN predections p ON p.match_id = m.id 
+                                            WHERE p.player_id = ? AND m.entered_at >= ? AND m.entered_at <= ?
+                                            ORDER BY points DESC`, [player_id, first_champions_day, second_champions_day]);
+    if(results.length == 0){
+        return false;
+    }
+
+    // console.log(results)
 
     return results;
 }

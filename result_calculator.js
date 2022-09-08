@@ -21,22 +21,25 @@ async function calculte_result(date){
     });
 
     games_with_predections.forEach(async (game) => {
-
+        // console.log(game)
         let r_result = (game.result).split("-");
         let p_result = (game.predection).split("-");
         
         if(game.result == game.predection){
             players_points[game.player_id] = parseInt(players_points[game.player_id]) + 3;
-            await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [3, game.match_id, game.player_id]);
+            // console.log("Natija exact")
+            await promisePool.execute('UPDATE predections SET points = ?, note= ? WHERE match_id = ? AND player_id = ?', [3, "Natija exact" ,game.match_id, game.player_id]);
         }else if(r_result[0] == r_result[1]){
             if(p_result[0] == p_result[1]){
                 players_points[game.player_id] = parseInt(players_points[game.player_id]) + 1;
-                await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [1, game.match_id, game.player_id]);
+                // console.log("Tawa9o3 Ta3adol")
+                await promisePool.execute('UPDATE predections SET points = ?, note= ? WHERE match_id = ? AND player_id = ?', [1, "Tawa9o3 Ta3adol" ,game.match_id, game.player_id]);
             }
         }else if(r_result.indexOf(Math.max(...r_result).toString()) == p_result.indexOf(Math.max(...p_result).toString())){
-            if(Math.max(...p_result).toString() != 0){
+            if(p_result[0] != p_result[1] ){
                 players_points[game.player_id] = parseInt(players_points[game.player_id]) + 1;
-                await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [1, game.match_id, game.player_id]);
+                // console.log("Tawa9o3 Fawz")
+                await promisePool.execute('UPDATE predections SET points = ?, note= ? WHERE match_id = ? AND player_id = ?', [1, "Tawa9o3 Fawz" ,game.match_id, game.player_id]);
             }
         }
     });
@@ -48,4 +51,4 @@ async function calculte_result(date){
     console.log("Done");
 }
 
-// calculte_result("2022-09-00");
+calculte_result("2022-09-07");
