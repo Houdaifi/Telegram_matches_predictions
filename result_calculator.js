@@ -3,32 +3,49 @@ const promisePool = connection.promise();
 
 async function calculte_result(date){
     let [games_with_predections] = await promisePool.query(
-        `SELECT game, m.result, p.match_id, p.player_id, p.result as predection FROM matches m
+        `SELECT game, m.result, p.match_id, p.player_id, pl.points, p.result as predection FROM matches m
         INNER JOIN predections p
         ON m.id = p.match_id
-        WHERE m.entered_at = ? 
-        ORDER BY p.player_id, p.match_id ASC
-        LIMIT 10`,
+        INNER JOIN players pl
+        ON pl.id = p.player_id
+        WHERE m.entered_at = ?
+        ORDER BY p.player_id, p.match_id ASC`,
         [date]);
 
-    if(games_with_predections.length == 0){
-        return;
-    }
-
+    if(games_with_predections.length == 0) return;
+ 
     let players_points = [];
 
-    games_with_predections.forEach(game => {
-        if(game.result == game.predection){
-            players_points[game.player_id] = (players_points[game.player_id] || 0) + 3;
-        }else{
-            let results= (game.result).split("-");
+    await games_with_predections.forEach((game) => {
+        players_points[game.player_id] = parseInt(game.points);
+    });
 
-            console.log(results)
+    games_with_predections.forEach(async (game) => {
+
+        let r_result = (game.result).split("-");
+        let p_result = (game.predection).split("-");
+        
+        if(game.result == game.predection){
+            players_points[game.player_id] = parseInt(players_points[game.player_id]) + 3;
+            await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [3, game.match_id, game.player_id]);
+        }else if(r_result[0] == r_result[1]){
+            if(p_result[0] == p_result[1]){
+                players_points[game.player_id] = parseInt(players_points[game.player_id]) + 1;
+                await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [1, game.match_id, game.player_id]);
+            }
+        }else if(r_result.indexOf(Math.max(...r_result).toString()) == p_result.indexOf(Math.max(...p_result).toString())){
+            if(Math.max(...p_result).toString() != 0){
+                players_points[game.player_id] = parseInt(players_points[game.player_id]) + 1;
+                await promisePool.execute('UPDATE predections SET points = ? WHERE match_id = ? AND player_id = ?', [1, game.match_id, game.player_id]);
+            }
         }
     });
 
-    console.log(players_points);
+    players_points.forEach(async (player_point, player_id) => {
+        await promisePool.execute('UPDATE players SET points = ? WHERE id = ?', [player_point, player_id]);
+    });
 
+    console.log("Done");
 }
 
-calculte_result("2022-09-06");
+// calculte_result("2022-09-00");

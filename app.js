@@ -389,6 +389,20 @@ async function get_player_predection(player_id, date){
     return rows;
 }
 
+// async function get_all_players_predections(date){
+//     let game_date = set_game_date(date);
+
+//     let [rows] = await promisePool.query(`SELECT m.game, p.result FROM matches m 
+//                                             INNER JOIN predections p ON p.match_id = m.id 
+//                                             WHERE m.entered_at = ?
+//                                             ORDER BY pl.lname`, [game_date]);
+//     if(rows.length == 0){
+//         return false;
+//     }
+
+//     return rows;
+// }
+
 async function get_dashboard(){
     let [results] = await promisePool.query("SELECT lname, points FROM players ORDER BY points DESC");
     if(results.length == 0){
