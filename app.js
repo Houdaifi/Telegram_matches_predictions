@@ -49,6 +49,7 @@ bot.on('message', async (msg) => {
     if(["/start_predections", "/start_predections@Tawa9o3at_bot", "/edit_a_predection", "/edit_a_predection@Tawa9o3at_bot"].includes(msg.text)){
         if(it_is_over_deadline()){
             await bot.sendMessage(chatId, 'Fat lwa9t a ba dyali, deadline howa 4 d l3chiya');
+            bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
             return;
         }
     }
@@ -220,6 +221,7 @@ bot.on('message', async (msg) => {
         case '/saborat_tartib':
         case '/saborat_tartib@Tawa9o3at_bot':
 
+
             await get_dashboard().then((results) => {
                 response = "";
                 results.forEach(result => {
@@ -242,6 +244,27 @@ bot.on('message', async (msg) => {
                 
             await bot.sendMessage(chatId, response);
             break;
+
+        case 'tawa9o3at_kamlin':
+        case 'tawa9o3at_kamlin@Tawa9o3at_bot':
+
+            if(it_is_over_deadline()){
+                await get_all_players_predections(date).then((predections) => {
+                    response = "";
+                    response = response.concat("\n", (predections[0].lname).toUpperCase());
+                    predections.forEach(predection => {
+                        response = response.concat("\n", predection.game + " ===> " + predection.result);
+                    });
+                });
+
+                bot.sendMessage(chatId, response);
+            }else{
+                bot.sendMessage(chatId, "Can't show predections before 4h d l3chiya");
+                // bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
+                return;
+            }
+
+            break;            
 
         default:
             break;
@@ -402,22 +425,23 @@ async function get_player_predection(player_id, date){
     return rows;
 }
 
-// async function get_all_players_predections(date){
-//     let game_date = set_game_date(date);
+async function get_all_players_predections(date){
+    let game_date = set_game_date(date);
 
-//     let [rows] = await promisePool.query(`SELECT m.game, p.result FROM matches m 
-//                                             INNER JOIN predections p ON p.match_id = m.id 
-//                                             WHERE m.entered_at = ?
-//                                             ORDER BY pl.lname`, [game_date]);
-//     if(rows.length == 0){
-//         return false;
-//     }
+    let [rows] = await promisePool.query(`SELECT m.game, p.result, pl.lname FROM matches m 
+                                        INNER JOIN predections p ON p.match_id = m.id
+                                        INNER JOIN players pl ON p.player_id = pl.id
+                                        WHERE m.entered_at = ?
+                                        ORDER BY pl.id`, [game_date]);
+    if(rows.length == 0){
+        return false;
+    }
 
-//     return rows;
-// }
+    return rows;
+}
 
 async function get_dashboard(){
-    let [results] = await promisePool.query("SELECT lname, points FROM players ORDER BY points DESC");
+    let [results] = await promisePool.query("SELECT id, lname, points FROM players ORDER BY points DESC");
     if(results.length == 0){
         return false;
     }
@@ -450,6 +474,7 @@ async function get_players_predections_points_with_notes(player_id){
     let [results] = await promisePool.query(`SELECT m.game, m.result, p.points, p.note FROM matches m
                                             INNER JOIN predections p ON p.match_id = m.id 
                                             WHERE p.player_id = ? AND m.entered_at >= ? AND m.entered_at <= ?
+                                            AND p.points != '0'
                                             ORDER BY points DESC`, [player_id, first_champions_day, second_champions_day]);
     if(results.length == 0){
         return false;

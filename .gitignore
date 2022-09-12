@@ -16,6 +16,9 @@ telegram_commands.txt
 # result file
 *.xls
 
+# assets
+/assets
+
 # Log files
 npm-debug.log*
 yarn-debug.log*
