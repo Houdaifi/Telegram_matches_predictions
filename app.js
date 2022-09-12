@@ -245,8 +245,8 @@ bot.on('message', async (msg) => {
             await bot.sendMessage(chatId, response);
             break;
 
-        case 'tawa9o3at_kamlin':
-        case 'tawa9o3at_kamlin@Tawa9o3at_bot':
+        case '/tawa9o3at_kamlin':
+        case '/tawa9o3at_kamlin@Tawa9o3at_bot':
 
             if(it_is_over_deadline()){
                 await get_all_players_predections(date).then((predections) => {
@@ -259,7 +259,7 @@ bot.on('message', async (msg) => {
 
                 bot.sendMessage(chatId, response);
             }else{
-                bot.sendMessage(chatId, "Can't show predections before 4h d l3chiya");
+                bot.sendMessage(chatId, "Can't show predections before 4h d l3chiya of match day");
                 // bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
                 return;
             }
