@@ -86,13 +86,13 @@ bot.on('message', async (msg) => {
                                             predection[i] = "0-0";
                                         }
 
-                                        await promisePool.execute('INSERT INTO predections (match_id, player_id, result, is_favourite, points, entered_at) VALUES (?,?,?,?,?, NOW())',
-                                        [match.id, player_id, predection[i].trim(), 0, 0]);
+                                        await promisePool.execute('INSERT INTO predections (match_id, player_id, result, points, entered_at) VALUES (?,?,?,?, NOW())',
+                                        [match.id, player_id, predection[i].trim(), 0]);
                                         // On success send confirm message
                                         await bot.sendMessage(chatId, `Saved, Tawa9o3 dyalk for : \n${match.game} is ${predection[i]}\nBonne chance`);
                                     }
                                 } catch (error) {
-                                    bot.sendMessage(chatId, "Error, Try Again! with command \n /start_predections");
+                                    bot.sendMessage(chatId, "Error, Try Again! with command\n /start_predections\n " + error.message);
                                     return error.message;
                                 }
                             }
@@ -235,8 +235,12 @@ bot.on('message', async (msg) => {
         case '/nata2ij_dyali':
         case '/nata2ij_dyali@Tawa9o3at_bot':
 
+            return
+
             await get_players_predections_points_with_notes(player_id).then((game_predections) => {
                 response = "";
+                console.log(game_predections)
+                return
                 game_predections.forEach(game_predection => {
                     response = response.concat("\n", (game_predection.game).toUpperCase() + " finished with ==> " + game_predection.result + " And you got " + game_predection.points + " points 7it ==> " + game_predection.note);
                 });
@@ -250,17 +254,25 @@ bot.on('message', async (msg) => {
 
             if(it_is_over_deadline()){
                 await get_all_players_predections(date).then((predections) => {
+                    let predecs = [];
                     response = "";
-                    response = response.concat("\n", (predections[0].lname).toUpperCase());
                     predections.forEach(predection => {
-                        response = response.concat("\n", predection.game + " ===> " + predection.result);
+                        if(!predecs[predection.lname]) predecs[predection.lname] = [];
+                        predecs[predection.lname].push({"game" : predection.game, "result": predection.result});
                     });
+                
+                    for (const player in predecs) {
+                        response = response.concat("\n", "<b>" + player.toUpperCase() + "</b>:");
+                        predecs[player].forEach(predect => {
+                            response = response.concat("\n", predect.game + " ===> " + predect.result);
+                        });
+                        response = response.concat("\n", "\n---------------");
+                    }
                 });
 
-                bot.sendMessage(chatId, response);
+                bot.sendMessage(chatId, response, {parse_mode: 'HTML'});
             }else{
                 bot.sendMessage(chatId, "Can't show predections before 4h d l3chiya of match day");
-                // bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
                 return;
             }
 
@@ -432,7 +444,7 @@ async function get_all_players_predections(date){
                                         INNER JOIN predections p ON p.match_id = m.id
                                         INNER JOIN players pl ON p.player_id = pl.id
                                         WHERE m.entered_at = ?
-                                        ORDER BY pl.id`, [game_date]);
+                                        ORDER BY pl.id, m.game`, [game_date]);
     if(rows.length == 0){
         return false;
     }
@@ -467,6 +479,7 @@ function getPastMatchDate(){
 }
 
 async function get_players_predections_points_with_notes(player_id){
+    
     const [year, month, day] = getPastMatchDate();
     let first_champions_day = year + month + day;
     let second_champions_day = year + month + (parseInt(day) + 1);
