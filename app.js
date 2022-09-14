@@ -181,7 +181,7 @@ bot.on('message', async (msg) => {
                 if(Array.isArray(matches)){
                     for (const match of matches) {
                         response = response.concat("\n", match.id + "-" + match.game);
-                        match_ids.push({text: match.id, callback_data: JSON.stringify({'answer': match.id})});
+                        match_ids.push([{'text': match.id, 'callback_data': match.id}]);
                     }
                 }else{
                     response = matches;
@@ -194,9 +194,9 @@ bot.on('message', async (msg) => {
                 chatId,
                 'Enter the ID of the game you want to change',
                 {
-                    reply_markup: {
-                        inline_keyboard: [match_ids]
-                    }
+                    'reply_markup': JSON.stringify({
+                        inline_keyboard: match_ids
+                    })
                 }
             );
             break;
@@ -235,12 +235,8 @@ bot.on('message', async (msg) => {
         case '/nata2ij_dyali':
         case '/nata2ij_dyali@Tawa9o3at_bot':
 
-            return
-
             await get_players_predections_points_with_notes(player_id).then((game_predections) => {
                 response = "";
-                console.log(game_predections)
-                return
                 game_predections.forEach(game_predection => {
                     response = response.concat("\n", (game_predection.game).toUpperCase() + " finished with ==> " + game_predection.result + " And you got " + game_predection.points + " points 7it ==> " + game_predection.note);
                 });
@@ -287,7 +283,7 @@ bot.on('callback_query', async (callbackQuery) => {
     let {message, data} = callbackQuery;
     let chatId = message.chat.id;
 
-    match_id_to_be_edited = (JSON.parse(data)).answer;
+    match_id_to_be_edited = JSON.parse(data);
 
     last_command = "/edit_a_predection";
     await bot.sendMessage(chatId, "Ok, Bayach ghatbdel natija ?\nPlease make sure to be on following format 0-0");
@@ -481,8 +477,8 @@ function getPastMatchDate(){
 async function get_players_predections_points_with_notes(player_id){
     
     const [year, month, day] = getPastMatchDate();
-    let first_champions_day = year + month + day;
-    let second_champions_day = year + month + (parseInt(day) + 1);
+    let first_champions_day = year + "-" + month + "-" + (parseInt(day) - 1);
+    let second_champions_day = year + "-" + month + "-" + day;
 
     let [results] = await promisePool.query(`SELECT m.game, m.result, p.points, p.note FROM matches m
                                             INNER JOIN predections p ON p.match_id = m.id 
