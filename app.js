@@ -308,7 +308,7 @@ function getMatchDate(){
     if(day < 10) day = "0" + day;
     if(month < 10) month = "0" + month;
 
-    return [year, month, day];
+    return [String(year), String(month), String(day)];
 }
 
 async function get_player_id_by_username(username){
@@ -321,7 +321,6 @@ async function get_player_id_by_username(username){
 
 async function get_matches(date){
     try {
-
         var driver = new Builder().forBrowser(Browser.CHROME)
                     .setChromeOptions( new chrome.Options().headless().windowSize(screen))
                     .build();
@@ -330,14 +329,14 @@ async function get_matches(date){
         const [month, day] = split(MonthAndDay, 2);
         let game_date = year + "-" + month + "-" + day;
 
-        var d = new Date(game_date);
-        var dayName = days[d.getDay()];
+        // var d = new Date(game_date);
+        // var dayName = days[d.getDay()];
 
         // If it's not Tuesday or Wednesday just exit
-        if(!["Tuesday", "Wednesday"].includes(dayName)){
-            driver.quit();
-            return "No upcoming matches";
-        }
+        // if(!["Tuesday", "Wednesday"].includes(dayName)){
+        //     driver.quit();
+        //     return "No upcoming matches";
+        // }
         
         await driver.manage().setTimeouts( { implicit: 0, pageLoad: 5000, script: null } );
 
