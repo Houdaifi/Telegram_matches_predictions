@@ -235,6 +235,8 @@ bot.on('message', async (msg) => {
         case '/nata2ij_dyali':
         case '/nata2ij_dyali@Tawa9o3at_bot':
 
+            // return
+
             await get_players_predections_points_with_notes(player_id).then((game_predections) => {
                 response = "";
                 game_predections.forEach(game_predection => {
@@ -475,15 +477,20 @@ function getPastMatchDate(){
 
 async function get_players_predections_points_with_notes(player_id){
     
-    const [year, month, day] = getPastMatchDate();
-    let first_champions_day = year + "-" + month + "-" + (parseInt(day) - 1);
-    let second_champions_day = year + "-" + month + "-" + day;
+    // const [year, month, day] = getPastMatchDate();
+    // let first_champions_day = year + "-" + month + "-" + (parseInt(day) - 1);
+    // let second_champions_day = year + "-" + month + "-" + day;
+
+    // let first_champions_day = year + month + day;
+    // let second_champions_day = year + month + (parseInt(day) + 1);
+
+    // console.log(first_champions_day, second_champions_day);
 
     let [results] = await promisePool.query(`SELECT m.game, m.result, p.points, p.note FROM matches m
                                             INNER JOIN predections p ON p.match_id = m.id 
-                                            WHERE p.player_id = ? AND m.entered_at >= ? AND m.entered_at <= ?
+                                            WHERE p.player_id = ? AND m.entered_at BETWEEN ? AND ?
                                             AND p.points != '0'
-                                            ORDER BY points DESC`, [player_id, first_champions_day, second_champions_day]);
+                                            ORDER BY points DESC`, [player_id, "2022-10-11", "2022-10-11"]);
     if(results.length == 0){
         return false;
     }

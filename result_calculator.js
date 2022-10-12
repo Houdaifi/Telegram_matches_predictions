@@ -51,4 +51,4 @@ async function calculte_result(date){
     console.log("Done");
 }
 
-calculte_result("2022-09-07");
+// calculte_result("2022-10-11");
