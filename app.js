@@ -29,7 +29,7 @@ function it_is_over_deadline(){
 
     var dayName = days[current_date.getDay()];
 
-    const deadline_time = "16:00:00";
+    const deadline_time = "19:00:00";
     
     if(["Tuesday", "Wednesday"].includes(dayName)){
         if (current_time >= deadline_time){
@@ -48,7 +48,7 @@ bot.on('message', async (msg) => {
 
     if(["/start_predections", "/start_predections@Tawa9o3at_bot", "/edit_a_predection", "/edit_a_predection@Tawa9o3at_bot"].includes(msg.text)){
         if(it_is_over_deadline()){
-            await bot.sendMessage(chatId, 'Fat lwa9t a ba dyali, deadline howa 4 d l3chiya');
+            await bot.sendMessage(chatId, 'Fat lwa9t a ba dyali, deadline howa 7 d l3chiya');
             bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
             return;
         }
@@ -235,7 +235,7 @@ bot.on('message', async (msg) => {
         case '/nata2ij_dyali':
         case '/nata2ij_dyali@Tawa9o3at_bot':
 
-            // return
+            return
 
             await get_players_predections_points_with_notes(player_id).then((game_predections) => {
                 response = "";
@@ -282,6 +282,7 @@ bot.on('message', async (msg) => {
 });
 
 bot.on('callback_query', async (callbackQuery) => {
+    if (it_is_over_deadline()) return
     let {message, data} = callbackQuery;
     let chatId = message.chat.id;
 
@@ -476,21 +477,11 @@ function getPastMatchDate(){
 }
 
 async function get_players_predections_points_with_notes(player_id){
-    
-    // const [year, month, day] = getPastMatchDate();
-    // let first_champions_day = year + "-" + month + "-" + (parseInt(day) - 1);
-    // let second_champions_day = year + "-" + month + "-" + day;
-
-    // let first_champions_day = year + month + day;
-    // let second_champions_day = year + month + (parseInt(day) + 1);
-
-    // console.log(first_champions_day, second_champions_day);
-
     let [results] = await promisePool.query(`SELECT m.game, m.result, p.points, p.note FROM matches m
                                             INNER JOIN predections p ON p.match_id = m.id 
                                             WHERE p.player_id = ? AND m.entered_at BETWEEN ? AND ?
                                             AND p.points != '0'
-                                            ORDER BY points DESC`, [player_id, "2022-10-11", "2022-10-11"]);
+                                            ORDER BY points DESC`, [player_id, "2022-02-14", "2022-02-14"]);
     if(results.length == 0){
         return false;
     }
