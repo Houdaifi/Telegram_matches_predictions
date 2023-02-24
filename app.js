@@ -3,7 +3,7 @@ const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const screen = {width: 1920,height: 1080};
 require('dotenv').config();
- 
+
 const connection = require("./db.congif");
 const promisePool = connection.promise();
 
@@ -42,11 +42,26 @@ function it_is_over_deadline(){
 
 // Listen for any kind of message. There are different kinds of messages.
 bot.on('message', async (msg) => {
-
     let response = "";
     const chatId = msg.chat.id;
+    var msg_text = msg.text;
+    const player_name = msg.from.first_name + "_" + msg.from.last_name;
 
-    if(["/start_predections", "/start_predections@Tawa9o3at_bot", "/edit_a_predection", "/edit_a_predection@Tawa9o3at_bot"].includes(msg.text)){
+    // ignore if msg is not a command or is not contains a slash "/"
+    if((msg.hasOwnProperty('entities') && msg.entities[0].type !== 'bot_command') || msg_text.indexOf('/') == -1) return
+
+    // rod l7asana wa sayi2a bi mitliha
+    let escaped_msg = msg_text.replace(/[^a-zA-Z_]/g, "");
+    let regex;
+    if(escaped_msg.match(regex)){
+        let answer = escaped_msg.replace(regex, player_name);
+        bot.sendMessage(chatId, answer);
+        return
+    }
+   
+    return
+
+    if(["/start_predections", "/start_predections@Tawa9o3at_bot", "/edit_a_predection", "/edit_a_predection@Tawa9o3at_bot"].includes(msg_text)){
         if(it_is_over_deadline()){
             await bot.sendMessage(chatId, 'Fat lwa9t a ba dyali, deadline howa 7 d l3chiya');
             bot.sendDocument(chatId, './assets/köksal-baba-trabzonspor.gif');
@@ -66,9 +81,9 @@ bot.on('message', async (msg) => {
             case '/start_predections':
             case '/start_predections@Tawa9o3at_bot':
 
-                if((msg.text).startsWith("/")) break;
+                if((msg_text).startsWith("/")) break;
 
-                let predection = (msg.text).split("\n");
+                let predection = (msg_text).split("\n");
 
                 if(predection.length > 0){
                     if(typeof predection[0] == "string"){
@@ -107,9 +122,9 @@ bot.on('message', async (msg) => {
             case '/edit_a_predection':
             case '/edit_a_predection@Tawa9o3at_bot':
                 
-                if((msg.text).startsWith("/")) break;
+                if((msg_text).startsWith("/")) break;
 
-                let new_predection = (msg.text).trim();
+                let new_predection = (msg_text).trim();
 
                 if(new_predection.includes("-")){
                     // if predection in bad format make it = 0-0
@@ -133,10 +148,10 @@ bot.on('message', async (msg) => {
     }
 
     // Save the last command to response to it
-    all_commands.includes(msg.text) ? last_command = msg.text : last_command = "";
+    all_commands.includes(msg_text) ? last_command = msg_text : last_command = "";
 
     // all commands switch handle
-    switch (msg.text) {
+    switch (msg_text) {
         case '/partidos_li_majin':
         case '/partidos_li_majin@Tawa9o3at_bot':
 
@@ -235,8 +250,6 @@ bot.on('message', async (msg) => {
         case '/nata2ij_dyali':
         case '/nata2ij_dyali@Tawa9o3at_bot':
 
-            return
-
             await get_players_predections_points_with_notes(player_id).then((game_predections) => {
                 response = "";
                 game_predections.forEach(game_predection => {
@@ -282,6 +295,7 @@ bot.on('message', async (msg) => {
 });
 
 bot.on('callback_query', async (callbackQuery) => {
+    return
     if (it_is_over_deadline()) return
     let {message, data} = callbackQuery;
     let chatId = message.chat.id;
@@ -481,7 +495,7 @@ async function get_players_predections_points_with_notes(player_id){
                                             INNER JOIN predections p ON p.match_id = m.id 
                                             WHERE p.player_id = ? AND m.entered_at BETWEEN ? AND ?
                                             AND p.points != '0'
-                                            ORDER BY points DESC`, [player_id, "2022-02-14", "2022-02-14"]);
+                                            ORDER BY points DESC`, [player_id, "2023-02-21", "2023-02-22"]);
     if(results.length == 0){
         return false;
     }
